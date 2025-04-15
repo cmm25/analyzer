@@ -115,33 +115,135 @@ async function checkMissingNatspec(ast: ASTNode, source: string): Promise<Partia
     }
     return issues;
 }
-async function checkMagicNumbers(ast: ASTNode, source: string): Promise<Partial<Issue>[]> {
+async function checkFunctionNaming(ast: ASTNode, source: string): Promise<Partial<Issue>[]> {
     const issues: Partial<Issue>[] = [];
-    // Find large numbers in code that aren't in constants
-    // This is a simplification - in real code, you'd check if they're in constant definitions
-    const magicNumberRegex = /[^\w\d.](\d{4,})[^\w\d.]/g;
-    const matches = [...source.matchAll(magicNumberRegex)];
-
+    const functionRegex = /function\s+(\w+)/g;
+    const matches = [...source.matchAll(functionRegex)];
+    
     for (const match of matches) {
-        const number = match[1];
+        const funcName = match[1];
         const matchPos = match.index || 0;
-        const lineNumber = source.substring(0, matchPos).split('\n').length;
-
-        // Skip if it's in a constant definition
-        const line = source.split('\n')[lineNumber - 1];
-        if (!line.includes('constant')) {
+        if (funcName === 'constructor' || funcName === 'fallback' || funcName === 'receive') {
+            continue;
+        }
+        
+        // Check if the function follows camelCase naming convention
+        if (!/^[a-z][a-zA-Z0-9]*$/.test(funcName) || funcName.includes('_')) {
+            const lineNumber = source.substring(0, matchPos).split('\n').length;
+            
             issues.push({
                 line: lineNumber,
                 column: match.index ? match.index - source.lastIndexOf('\n', match.index) : 0,
                 suggestions: [
-                    `Replace magic number ${number} with a named constant`,
-                    `Example: uint256 constant EXAMPLE_VALUE = ${number};`,
-                    'Constants improve code readability and maintainability'
+                    `Rename function '${funcName}' to follow camelCase convention`,
+                    'Function names should start with a lowercase letter',
+                    'Avoid underscores in function names',
+                    `Example: '${convertToCamelCase(funcName)}'`
                 ],
                 canAutoFix: true
             });
         }
-    }
-
+    }    
     return issues;
+}
+
+// Helper to convert function names to camelCase
+function convertToCamelCase(name: string): string {
+    name = name.replace(/^_+/, '');
+    name = name.replace(/_([a-zA-Z])/g, (_, letter) => letter.toUpperCase());
+    return name.charAt(0).toLowerCase() + name.slice(1);
+}
+
+async function checkMagicNumbers(ast: ASTNode, source: string): Promise<Partial<Issue>[]> {
+    const issues: Partial<Issue>[] = [];
+    const acceptableNumbers = new Set([0, 1, 2, 10, 100]);    
+    // Find large numbers in code that aren't in constants
+    const magicNumberRegex = /[^\w\d.](\d+)[^\w\d.]/g;
+    const matches = [...source.matchAll(magicNumberRegex)];
+    
+    for (const match of matches) {
+        const number = parseInt(match[1]);        
+        // Skip acceptable small numbers
+        if (isNaN(number) || acceptableNumbers.has(number) || number < 10) {
+            continue;
+        }
+        
+        const matchPos = match.index || 0;
+        const lineNumber = source.substring(0, matchPos).split('\n').length;
+        const line = source.split('\n')[lineNumber - 1];
+        if (line.includes('constant') || line.includes('event ')) {
+            continue;
+        }
+        const contextRange = 20;
+        const context = source.substring(
+            Math.max(0, matchPos - contextRange), 
+            Math.min(source.length, matchPos + match[0].length + contextRange)
+        );        
+        // Skip if it appears to be a timestamp or time-related
+        if (/\b(time|block\.timestamp|now|seconds|minutes|hours|days|weeks)\b/.test(context)) {
+            continue;
+        }
+        
+        issues.push({
+            line: lineNumber,
+            column: match.index ? match.index - source.lastIndexOf('\n', match.index) : 0,
+            suggestions: [
+                `Replace magic number ${number} with a named constant`,
+                `Example: uint256 constant EXAMPLE_VALUE = ${number};`,
+                'Constants improve code readability and maintainability'
+            ],
+            canAutoFix: true
+        });
+    }
+    
+    return issues;
+}
+async function checkEventEmission(ast: ASTNode, source: string): Promise<Partial<Issue>[]> {
+    const issues: Partial<Issue>[] = [];
+    const functionRegex = /function\s+(\w+)[^{]*(?!\bview\b|\bpure\b)[^{]*\{/g;
+    const matches = [...source.matchAll(functionRegex)];
+    
+    for (const match of matches) {
+        const funcName = match[1];
+        const matchPos = match.index || 0;
+        if (funcName === 'constructor' || funcName === 'fallback' || funcName === 'receive') {
+            continue;
+        }
+        const bodyStart = source.indexOf('{', matchPos);
+        const bodyEnd = findMatchingBracket(source, bodyStart);
+        
+        if (bodyStart >= 0 && bodyEnd >= 0) {
+            const funcBody = source.substring(bodyStart, bodyEnd + 1);
+            if (funcBody.includes('=') && !funcBody.includes('emit ')) {
+                const lineNumber = source.substring(0, matchPos).split('\n').length;
+                
+                issues.push({
+                    line: lineNumber, 
+                    column: match.index ? match.index - source.lastIndexOf('\n', match.index) : 0,
+                    suggestions: [
+                        `Function '${funcName}' changes state but doesn't emit an event`,
+                        'Consider adding events for state changes to make them observable off-chain',
+                        `Example: emit ${funcName.charAt(0).toUpperCase() + funcName.slice(1)}(parameters);`
+                    ],
+                    canAutoFix: false
+                });
+            }
+        }
+    }    
+    return issues;
+}
+function findMatchingBracket(source: string, openPos: number): number {
+    if (source[openPos] !== '{') return -1;
+    
+    let depth = 1;
+    let pos = openPos + 1;
+    
+    while (pos < source.length && depth > 0) {
+        if (source[pos] === '{') depth++;
+        else if (source[pos] === '}') depth--;
+        if (depth === 0) return pos;
+        pos++;
+    }
+    
+    return -1;
 }

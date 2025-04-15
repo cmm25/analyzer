@@ -1,82 +1,67 @@
-
-import { analyzeSecurity } from './securityAnalyzer';
-import { analyzeGas } from './gasOptimizer';
-import { analyzeBestPractices } from './bestpractices';
-import { parseSolidity, ParsedContract } from '../parser/solidity';
-
-export interface AnalysisOptions {
-    security: boolean;
-    gasOptimization: boolean;
-    bestPractices: boolean;
-}
+import { ASTNode } from "../parser/solidity";
+import { analyzeSecurity, SecurityAnalysisResult } from "./securityAnalyzer";
+import { analyzeGas, GasAnalysisResult } from "./gasOptimizer";
+import { RuleEngine, AnalysisOptions } from "./ruleEngine";
 
 export interface AnalysisResult {
-    securityIssues: Issue[];
-    gasIssues: Issue[];
-    practiceIssues: Issue[];
+  file: string;
+  securityIssues: import("../types").Issue[];
+  gasIssues: import("../types").Issue[];
+  stats: {
+    securityIssueCount: number;
+    gasIssueCount: number;
+    totalIssueCount: number;
+    highSeverityCount: number;
+    mediumSeverityCount: number;
+    lowSeverityCount: number;
+    infoCount: number;
+  };
 }
 
-export interface Issue {
-    id: string;
-    severity: 'high' | 'medium' | 'low' | 'info';
-    title: string;
-    description: string;
-    line: number;
-    column: number;
-    suggestions?: string[];
-    canAutoFix: boolean;
-    codeSnippet?: string;
+export function analyzeSolidity(
+  ast: ASTNode,
+  sourceCode: string,
+  filePath: string
+): AnalysisResult {
+  const securityResult: SecurityAnalysisResult = analyzeSecurity(
+    ast,
+    sourceCode,
+    filePath
+  );
+  const gasResult: GasAnalysisResult = analyzeGas(ast, sourceCode, filePath);
+  const securityIssues = securityResult.issues;
+  const gasIssues = gasResult.issues;
+  const stats = {
+    securityIssueCount: securityIssues.length,
+    gasIssueCount: gasIssues.length,
+    totalIssueCount: securityIssues.length + gasIssues.length,
+    highSeverityCount:
+      countBySeverity(securityIssues, "high") +
+      countBySeverity(gasIssues, "high"),
+    mediumSeverityCount:
+      countBySeverity(securityIssues, "medium") +
+      countBySeverity(gasIssues, "medium"),
+    lowSeverityCount:
+      countBySeverity(securityIssues, "low") +
+      countBySeverity(gasIssues, "low"),
+    infoCount:
+      countBySeverity(securityIssues, "info") +
+      countBySeverity(gasIssues, "info"),
+  };
+  return { file: filePath, securityIssues, gasIssues, stats };
 }
 
-export async function analyze(
-    source: string,
-    options: AnalysisOptions
-): Promise<AnalysisResult> {
-    // Parse the Solidity code into an AST
-    const parsed = parseSolidity(source);
-
-    // Check for parse errors
-    if (parsed.errors.length > 0) {
-        throw new Error(`Failed to parse Solidity code: ${parsed.errors[0].message}`);
-    }
-
-    // Initialize empty results
-    const result: AnalysisResult = {
-        securityIssues: [],
-        gasIssues: [],
-        practiceIssues: []
-    };
-
-    // Run enabled analyzers
-    if (options.security) {
-        result.securityIssues = await analyzeSecurity(parsed.ast, source);
-    }
-
-    if (options.gasOptimization) {
-        result.gasIssues = await analyzeGas(parsed.ast, source);
-    }
-
-    if (options.bestPractices) {
-        result.practiceIssues = await analyzeBestPractices(parsed.ast, source);
-    }
-
-    // Add code snippets to issues
-    addCodeSnippets(result, source);
-
-    return result;
+function countBySeverity(
+  issues: import("../types").Issue[],
+  severity: "high" | "medium" | "low" | "info"
+): number {
+  return issues.filter((issue) => issue.severity === severity).length;
 }
 
-function addCodeSnippets(result: AnalysisResult, source: string): void {
-    const lines = source.split('\n');
+export { analyzeSolidity as analyze };
+export { AnalysisOptions };
+export { AnalysisResult };
 
-    const addSnippet = (issue: Issue) => {
-        const startLine = Math.max(0, issue.line - 2);
-        const endLine = Math.min(lines.length, issue.line + 2);
-
-        const snippetLines = lines.slice(startLine, endLine);
-        issue.codeSnippet = snippetLines.join('\n');
-    };
-
-    [...result.securityIssues, ...result.gasIssues, ...result.practiceIssues]
-        .forEach(addSnippet);
-}
+export { analyzeSecurity, SecurityAnalysisResult } from "./securityAnalyzer";
+export { analyzeGas, GasAnalysisResult } from "./gasOptimizer";
+export { RuleEngine } from "./ruleEngine";
