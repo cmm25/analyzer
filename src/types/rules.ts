@@ -4,15 +4,15 @@ export type Severity = "high" | "medium" | "low" | "info";
 
 
 export interface Issue {
-    id: string;
-    description: string;
-    severity: Severity;
-    location: {
-        line: number | null;
-        file: string;
-    };
-    code?: string;
-    suggestion?: string;
+        id: string;
+        title: string;
+        description: string;
+        message: string;
+        line: number;
+        column: number;
+        severity: 'high' | 'medium' | 'low' | 'info';
+        canAutoFix?: boolean;
+        suggestions?: string[];
 }
 
 export interface SecurityRule {

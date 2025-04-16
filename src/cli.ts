@@ -8,6 +8,7 @@ import fs from 'fs';
 import { analyze, AnalysisOptions, AnalysisResult } from './analyzer';
 import { generateConsoleReport, generateHtmlReport } from './reporter';
 import { readSolidityFile, writeToFile } from './utils/fileSystem';
+import { parseSolidity, ParserError } from './parser/solidity'; // Import ParserError type
 
 const globPromise = promisify(glob.Glob);
 
@@ -42,10 +43,12 @@ program
                     fs.mkdirSync(options.outputDir, { recursive: true });
                 }
             }
+            
+            // Define the analysis options
             const analysisOptions: AnalysisOptions = {
-                security: options.securityOnly || !options.gasOnly && !options.practicesOnly,
-                gasOptimization: options.gasOnly || !options.securityOnly && !options.practicesOnly,
-                bestPractices: options.practicesOnly || !options.securityOnly && !options.gasOnly
+                security: options.securityOnly || (!options.gasOnly && !options.practicesOnly),
+                gas: options.gasOnly || (!options.securityOnly && !options.practicesOnly),
+                practices: options.practicesOnly || (!options.securityOnly && !options.gasOnly)
             };
             for (const file of files) {
                 await processFile(file, analysisOptions, options)
@@ -61,8 +64,18 @@ async function processFile(filepath: string, analysisOption: AnalysisOptions, cl
     const spinner = ora(`Analyzing ${filepath}...`).start()
     try {
         const content = await readSolidityFile(filepath)
-        const results = await analyze(content, analysisOption)
-        //count number of issues present in a file
+        const parsedContract = parseSolidity(content);
+        const ast = parsedContract.ast;
+        if (parsedContract.errors.length > 0) {
+            spinner.fail(`Parsing errors in ${filepath}`);
+            for (const error of parsedContract.errors) {
+                console.error(chalk.red(`  Line ${error.line}:${error.column} - ${error.message}`));
+            }
+            return;
+        }
+        
+        // Pass the AST, analysis options, and filepath to the analyze functiont
+        const results = await analyze(ast, analysisOption, filepath);
         const issueCount = countIssues(results)
 
         if (issueCount === 0) {
@@ -70,7 +83,7 @@ async function processFile(filepath: string, analysisOption: AnalysisOptions, cl
         } else {
             spinner.warn(`${filepath}: Found ${issueCount} issues`);
         }
-        //report
+        // Report
         if (cliOptions.output === 'console') {
             generateConsoleReport(results, filepath, content);
         } else if (cliOptions.output === 'html') {
@@ -85,9 +98,7 @@ async function processFile(filepath: string, analysisOption: AnalysisOptions, cl
     }
 }
 function countIssues(results: AnalysisResult): number {
-    return results.securityIssues.length +
-        results.gasIssues.length +
-        results.practiceIssues.length;
+    return results.securityIssues.length + results.gasIssues.length + results.practiceIssues.length;
 }
 
 function hasFixableIssues(results: AnalysisResult): boolean {

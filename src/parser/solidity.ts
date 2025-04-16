@@ -1,4 +1,9 @@
-import parser, {ParserError} from '@solidity-parser/parser';
+import parser, {ParserError as SolidityParserError} from '@solidity-parser/parser';
+export interface ParserError extends SolidityParserError {
+    line: number;
+    column: number;
+    message: string;
+}
 
 export interface ASTNode {
     type: string;
@@ -18,9 +23,10 @@ export function parseSolidity(source: string): ParsedContract {
         return { ast, errors: [] };
     } catch (error) {
         if (error instanceof parser.ParserError) {
+            // Cast to our extended ParserError type
             return {
                 ast: { type: 'error' },
-                errors: [error]
+                errors: [error as unknown as ParserError]
             };
         }
         throw error;

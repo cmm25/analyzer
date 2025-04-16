@@ -7,6 +7,9 @@ export interface AnalysisOptions {
     includeRules?: string[];
     excludeRules?: string[];
     minSeverity?: "high" | "medium" | "low" | "info";
+    security?: boolean;
+    gas?: boolean;
+    practices?: boolean;
 }
 
 /**
@@ -18,10 +21,6 @@ export class RuleEngine {
     constructor(customRules?: SecurityRule[]) {
         this.rules = customRules || securityRules;
     }
-
-    /**
-     * Add a custom rule to the engine
-     */
     public addRule(rule: SecurityRule): void {
         this.rules.push(rule);
     }
@@ -36,7 +35,6 @@ export class RuleEngine {
 
         // Apply each rule to the entire AST
         for (const rule of filteredRules) {
-            // Some rules need to check the entire AST
             const astIssues = this.applyRuleToAST(rule, ast, sourceCode, filePath);
             issues.push(...astIssues);
             const nodes = findNodes(ast, "*");
@@ -48,13 +46,7 @@ export class RuleEngine {
         return this.filterIssuesBySeverity(issues, options.minSeverity);
     }
     // Apply a rule to the entire AST
-    private applyRuleToAST(
-        rule: SecurityRule,
-        ast: ASTNode,
-        sourceCode: string,
-        filePath: string
-    ): Issue[] {
-        // Some rules might need to be applied to the entire AST, not just individual nodes
+    private applyRuleToAST(rule: SecurityRule,ast: ASTNode,sourceCode: string,filePath: string): Issue[] {
         if (rule.id === "SEC-001") {
             return []; 
         }

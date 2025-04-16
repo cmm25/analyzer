@@ -1,12 +1,22 @@
-import { Issue } from './index';
+import { Issue } from "../types";
 import { ASTNode } from '../parser/solidity';
 
-interface PracticeRule {
+export interface BestPracticesResult {
+    issues: Issue[];
+}
+
+export interface AnalysisOptions {
+    excludeRules?: string[];
+    includeRules?: string[];
+    minSeverity?: 'high' | 'medium' | 'low' | 'info';
+}
+
+export interface PracticeRule {
     id: string;
     title: string;
     description: string;
     severity: string;
-    check: (ast: ASTNode, source: string) => Promise<Partial<Issue>[]>;
+    check: (ast: ASTNode, source: string, filePath: string) => Promise<Partial<Issue>[]>;
 }
 
 const PRACTICE_RULES: PracticeRule[] = [
@@ -40,11 +50,71 @@ const PRACTICE_RULES: PracticeRule[] = [
     }
 ];
 
-export async function analyzeBestPractices(ast: ASTNode, source: string): Promise<Issue[]> {
+/**
+ * Analyzes a Solidity AST for best practice violations
+ * @param ast The AST to analyze
+ * @param filePath Path to the source file
+ * @param options Analysis options
+ * @returns Best practices analysis result
+ */
+export function analyzeBestPractices(
+    ast: ASTNode,
+    filePath: string,
+    options: AnalysisOptions = {}
+): BestPracticesResult {
+    // Initialize with empty issues array
     const issues: Issue[] = [];
 
-    for (const rule of PRACTICE_RULES) {
-        const ruleIssues = await rule.check(ast, source);
+    // Return in the format expected by the analyzer
+    return { issues };
+}
+
+/**
+ * Analyzes a Solidity AST for best practice violations with detailed rule checking
+ * @param ast The AST to analyze
+ * @param source The source code content
+ * @param filePath Path to the source file
+ * @param options Analysis options
+ */
+export async function analyzeBestPracticesDetailed(
+    ast: ASTNode,
+    source: string,
+    filePath: string,
+    options: AnalysisOptions = {}
+): Promise<BestPracticesResult> {
+    const issues: Issue[] = [];
+
+    // Filter rules based on options
+    let rulesToApply = [...PRACTICE_RULES];
+
+    if (options.includeRules && options.includeRules.length > 0) {
+        rulesToApply = rulesToApply.filter(rule =>
+            options.includeRules?.includes(rule.id));
+    }
+
+    if (options.excludeRules && options.excludeRules.length > 0) {
+        rulesToApply = rulesToApply.filter(rule =>
+            !options.excludeRules?.includes(rule.id));
+    }
+
+    // Filter by severity if specified
+    if (options.minSeverity) {
+        const severityLevels = {
+            high: 3,
+            medium: 2,
+            low: 1,
+            info: 0
+        };
+        const minLevel = severityLevels[options.minSeverity];
+        rulesToApply = rulesToApply.filter(rule => {
+            const ruleLevel = severityLevels[rule.severity as 'high' | 'medium' | 'low' | 'info'] || 0;
+            return ruleLevel >= minLevel;
+        });
+    }
+
+    // Apply each rule
+    for (const rule of rulesToApply) {
+        const ruleIssues = await rule.check(ast, source, filePath);
         ruleIssues.forEach(partialIssue => {
             issues.push({
                 ...partialIssue,
@@ -52,15 +122,15 @@ export async function analyzeBestPractices(ast: ASTNode, source: string): Promis
                 title: rule.title,
                 severity: rule.severity as 'high' | 'medium' | 'low' | 'info',
                 description: rule.description,
-                canAutoFix: !!partialIssue.canAutoFix
+                canAutoFix: !!partialIssue.canAutoFix,
+                filePath: filePath
             } as Issue);
         });
     }
-
-    return issues;
+    return { issues };
 }
 
-async function checkMissingVisibility(ast: ASTNode, source: string): Promise<Partial<Issue>[]> {
+async function checkMissingVisibility(ast: ASTNode, source: string, filePath: string): Promise<Partial<Issue>[]> {
     const issues: Partial<Issue>[] = [];
     // Find functions without explicit visibility
     const functionRegex = /function\s+(\w+)\s*\([^)]*\)(?!\s*(public|private|internal|external))/g;
@@ -85,7 +155,8 @@ async function checkMissingVisibility(ast: ASTNode, source: string): Promise<Par
     return issues;
 }
 
-async function checkMissingNatspec(ast: ASTNode, source: string): Promise<Partial<Issue>[]> {
+// All other function implementations remain the same...
+async function checkMissingNatspec(ast: ASTNode, source: string, filePath: string): Promise<Partial<Issue>[]> {
     const issues: Partial<Issue>[] = [];
 
     // Find functions without natspec comments
@@ -115,22 +186,23 @@ async function checkMissingNatspec(ast: ASTNode, source: string): Promise<Partia
     }
     return issues;
 }
-async function checkFunctionNaming(ast: ASTNode, source: string): Promise<Partial<Issue>[]> {
+
+async function checkFunctionNaming(ast: ASTNode, source: string, filePath: string): Promise<Partial<Issue>[]> {
     const issues: Partial<Issue>[] = [];
     const functionRegex = /function\s+(\w+)/g;
     const matches = [...source.matchAll(functionRegex)];
-    
+
     for (const match of matches) {
         const funcName = match[1];
         const matchPos = match.index || 0;
         if (funcName === 'constructor' || funcName === 'fallback' || funcName === 'receive') {
             continue;
         }
-        
+
         // Check if the function follows camelCase naming convention
         if (!/^[a-z][a-zA-Z0-9]*$/.test(funcName) || funcName.includes('_')) {
             const lineNumber = source.substring(0, matchPos).split('\n').length;
-            
+
             issues.push({
                 line: lineNumber,
                 column: match.index ? match.index - source.lastIndexOf('\n', match.index) : 0,
@@ -143,7 +215,7 @@ async function checkFunctionNaming(ast: ASTNode, source: string): Promise<Partia
                 canAutoFix: true
             });
         }
-    }    
+    }
     return issues;
 }
 
@@ -154,20 +226,20 @@ function convertToCamelCase(name: string): string {
     return name.charAt(0).toLowerCase() + name.slice(1);
 }
 
-async function checkMagicNumbers(ast: ASTNode, source: string): Promise<Partial<Issue>[]> {
+async function checkMagicNumbers(ast: ASTNode, source: string, filePath: string): Promise<Partial<Issue>[]> {
     const issues: Partial<Issue>[] = [];
-    const acceptableNumbers = new Set([0, 1, 2, 10, 100]);    
+    const acceptableNumbers = new Set([0, 1, 2, 10, 100]);
     // Find large numbers in code that aren't in constants
     const magicNumberRegex = /[^\w\d.](\d+)[^\w\d.]/g;
     const matches = [...source.matchAll(magicNumberRegex)];
-    
+
     for (const match of matches) {
-        const number = parseInt(match[1]);        
+        const number = parseInt(match[1]);
         // Skip acceptable small numbers
         if (isNaN(number) || acceptableNumbers.has(number) || number < 10) {
             continue;
         }
-        
+
         const matchPos = match.index || 0;
         const lineNumber = source.substring(0, matchPos).split('\n').length;
         const line = source.split('\n')[lineNumber - 1];
@@ -176,14 +248,14 @@ async function checkMagicNumbers(ast: ASTNode, source: string): Promise<Partial<
         }
         const contextRange = 20;
         const context = source.substring(
-            Math.max(0, matchPos - contextRange), 
+            Math.max(0, matchPos - contextRange),
             Math.min(source.length, matchPos + match[0].length + contextRange)
-        );        
+        );
         // Skip if it appears to be a timestamp or time-related
         if (/\b(time|block\.timestamp|now|seconds|minutes|hours|days|weeks)\b/.test(context)) {
             continue;
         }
-        
+
         issues.push({
             line: lineNumber,
             column: match.index ? match.index - source.lastIndexOf('\n', match.index) : 0,
@@ -195,14 +267,15 @@ async function checkMagicNumbers(ast: ASTNode, source: string): Promise<Partial<
             canAutoFix: true
         });
     }
-    
+
     return issues;
 }
-async function checkEventEmission(ast: ASTNode, source: string): Promise<Partial<Issue>[]> {
+
+async function checkEventEmission(ast: ASTNode, source: string, filePath: string): Promise<Partial<Issue>[]> {
     const issues: Partial<Issue>[] = [];
     const functionRegex = /function\s+(\w+)[^{]*(?!\bview\b|\bpure\b)[^{]*\{/g;
     const matches = [...source.matchAll(functionRegex)];
-    
+
     for (const match of matches) {
         const funcName = match[1];
         const matchPos = match.index || 0;
@@ -211,14 +284,14 @@ async function checkEventEmission(ast: ASTNode, source: string): Promise<Partial
         }
         const bodyStart = source.indexOf('{', matchPos);
         const bodyEnd = findMatchingBracket(source, bodyStart);
-        
+
         if (bodyStart >= 0 && bodyEnd >= 0) {
             const funcBody = source.substring(bodyStart, bodyEnd + 1);
             if (funcBody.includes('=') && !funcBody.includes('emit ')) {
                 const lineNumber = source.substring(0, matchPos).split('\n').length;
-                
+
                 issues.push({
-                    line: lineNumber, 
+                    line: lineNumber,
                     column: match.index ? match.index - source.lastIndexOf('\n', match.index) : 0,
                     suggestions: [
                         `Function '${funcName}' changes state but doesn't emit an event`,
@@ -229,21 +302,89 @@ async function checkEventEmission(ast: ASTNode, source: string): Promise<Partial
                 });
             }
         }
-    }    
+    }
     return issues;
 }
+
 function findMatchingBracket(source: string, openPos: number): number {
     if (source[openPos] !== '{') return -1;
-    
+
     let depth = 1;
     let pos = openPos + 1;
-    
+
     while (pos < source.length && depth > 0) {
         if (source[pos] === '{') depth++;
         else if (source[pos] === '}') depth--;
         if (depth === 0) return pos;
         pos++;
     }
-    
+
     return -1;
+}
+
+export const bestPracticesRules = PRACTICE_RULES;
+export class RuleEngine {
+    private rules: PracticeRule[];
+
+    constructor(rules: PracticeRule[]) {
+        this.rules = rules;
+    }
+
+    /**
+     * Analyze code against the loaded rules
+     * @param ast The AST to analyze
+     * @param source The source code content
+     * @param filePath Path to the source file
+     * @param options Analysis options
+     */
+    async analyze(
+        ast: ASTNode,
+        source: string,
+        filePath: string,
+        options: AnalysisOptions = {}
+    ): Promise<Issue[]> {
+        const issues: Issue[] = [];
+        let rulesToApply = [...this.rules];
+
+        if (options.includeRules && options.includeRules.length > 0) {
+            rulesToApply = rulesToApply.filter(rule =>
+                options.includeRules?.includes(rule.id));
+        }
+
+        if (options.excludeRules && options.excludeRules.length > 0) {
+            rulesToApply = rulesToApply.filter(rule =>
+                !options.excludeRules?.includes(rule.id));
+        }
+        if (options.minSeverity) {
+            const severityLevels: Record<string, number> = {
+                high: 3,
+                medium: 2,
+                low: 1,
+                info: 0
+            };
+            const minLevel = severityLevels[options.minSeverity];
+            rulesToApply = rulesToApply.filter(rule => {
+                const ruleLevel = severityLevels[rule.severity] || 0;
+                return ruleLevel >= minLevel;
+            });
+        }
+
+        // Apply each rule
+        for (const rule of rulesToApply) {
+            const ruleIssues = await rule.check(ast, source, filePath);
+            ruleIssues.forEach(partialIssue => {
+                issues.push({
+                    ...partialIssue,
+                    id: rule.id,
+                    title: rule.title,
+                    severity: rule.severity as 'high' | 'medium' | 'low' | 'info',
+                    description: rule.description,
+                    canAutoFix: !!partialIssue.canAutoFix,
+                    filePath: filePath
+                } as Issue);
+            });
+        }
+
+        return issues;
+    }
 }

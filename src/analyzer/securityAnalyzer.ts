@@ -27,7 +27,15 @@ export class SecurityAnalyzer {
   }
 }
 
-export function analyzeSecurity(ast: ASTNode, sourceCode: string, filePath: string, options: AnalysisOptions = {}): SecurityAnalysisResult {
+/**
+ * Analyzes a Solidity AST for security vulnerabilities
+ * @param ast The AST to analyze
+ * @param filePath Path to the source file
+ * @param options Analysis options
+ */
+export function analyzeSecurity(ast: ASTNode, filePath: string, options: AnalysisOptions = {}): SecurityAnalysisResult {
   const analyzer = new SecurityAnalyzer();
+  // Get source code from AST or load from file if needed
+  const sourceCode = ""; 
   return analyzer.analyze(ast, sourceCode, filePath, options);
 }

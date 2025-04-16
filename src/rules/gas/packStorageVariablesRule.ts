@@ -13,7 +13,7 @@ export const packStorageVariablesRule: GasRule = {
     detect(node: ASTNode, sourceCode: string, filePath: string): GasIssue[] {
         if (node.type === "ContractDefinition" && node.subNodes) {
             const stateVars = node.subNodes.filter(
-                (n) => n.type === "StateVariableDeclaration"
+                (n: ASTNode) => n.type  === "StateVariableDeclaration"
             );
 
             for (let i = 0; i < stateVars.length - 1; i++) {
