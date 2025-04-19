@@ -70,10 +70,7 @@ export class RuleEngine {
 
         return result;
     }
-    private filterIssuesBySeverity(
-        issues: Issue[],
-        minSeverity?: "high" | "medium" | "low" | "info"
-    ): Issue[] {
+    private filterIssuesBySeverity( issues: Issue[], minSeverity?: "high" | "medium" | "low" | "info" ): Issue[] {
         if (!minSeverity) {
             return issues;
         }

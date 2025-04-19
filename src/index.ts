@@ -21,11 +21,7 @@ export {gasRules,explicitUint256Rule,packStorageVariablesRule,preIncrementRule} 
 export * from "./utils/astUtils";
 export * from "./utils/vulnerabilityUtils";
 export { calculateGasStats } from "./utils/gasStatsCalculator";
-export function analyzeSolidity(
-    ast: ASTNode,
-    sourceCode: string,
-    filePath: string
-): VulnerabilityReport {
+export function analyzeSolidity( ast: ASTNode, sourceCode: string, filePath: string ): VulnerabilityReport {
     const analyzer = new VulnerabilityAnalyzer();
     return analyzer.analyze(ast, sourceCode, filePath);
 }

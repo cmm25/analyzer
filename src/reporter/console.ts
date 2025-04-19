@@ -2,11 +2,7 @@ import chalk from 'chalk';
 import { table } from 'table';
 import { AnalysisResult, Issue } from '../analyzer';
 
-export function generateConsoleReport(
-    results: AnalysisResult,
-    filePath: string,
-    source: string
-): void {
+export function generateConsoleReport( results: AnalysisResult,  filePath: string, source: string ): void {
     const { securityIssues, gasIssues, practiceIssues } = results;
 
     console.log('\n' + chalk.bold(`Analysis results for ${filePath}:`));
@@ -60,7 +56,6 @@ function printIssueTable(issues: Issue[], source: string): void {
     for (const issue of sortedIssues) {
         console.log(chalk.bold(`\n${issue.id}: ${issue.title} (Line ${issue.line})`));
         console.log(chalk.dim(issue.description));
-        // Print code snippet
         if (issue.codeSnippet) {
             console.log(chalk.dim('\nCode:'));
             const lines = issue.codeSnippet.split('\n');

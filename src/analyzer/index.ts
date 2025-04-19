@@ -13,7 +13,7 @@ export interface AnalysisResult {
   stats: {
     securityIssueCount: number;
     gasIssueCount: number;
-    practiceIssueCount: number; // Add this
+    practiceIssueCount: number; 
     totalIssueCount: number;
     highSeverityCount: number;
     mediumSeverityCount: number;
@@ -29,11 +29,7 @@ export interface AnalysisResult {
  * @param filePath Path to the source file being analyzed
  * @returns A comprehensive analysis result
  */
-export async function analyzeSolidity(
-  ast: ASTNode,
-  options: AnalysisOptions,
-  filePath: string
-): Promise<AnalysisResult> {
+export async function analyzeSolidity( ast: ASTNode, options: AnalysisOptions, filePath: string ): Promise<AnalysisResult> {
   // Initialize empty results with all required properties
   let securityResult: SecurityAnalysisResult = { 
     file: filePath, 
@@ -58,10 +54,9 @@ export async function analyzeSolidity(
     issues: [] 
   };
   
-  // Get source code - assuming we can extract it from the AST or it's provided elsewhere
-  const sourceCode = ""; // This should ideally be loaded or passed in
   
-  // Run analyzers based on options
+  const sourceCode = ""; // This should ideally be loaded or passed in
+
   if (options.security !== false) {
     securityResult = analyzeSecurity(ast, filePath, options);
   }
@@ -119,15 +114,7 @@ function countBySeverity(
 
 // Export the analyzeSolidity function as analyze
 export { analyzeSolidity as analyze };
-
-// Also export a non-async version for backward compatibility
-export function analyzeSync(
-  ast: ASTNode,
-  options: AnalysisOptions,
-  filePath: string
-): AnalysisResult {
-  // This is a synchronous wrapper that doesn't await the best practices
-  // Only use when you know you don't need best practices analysis
+export function analyzeSync(  ast: ASTNode, options: AnalysisOptions, filePath: string ): AnalysisResult {
   const result = analyzeSolidity(ast, options, filePath) as unknown as AnalysisResult;
   return result;
 }
