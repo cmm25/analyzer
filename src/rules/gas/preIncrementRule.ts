@@ -21,12 +21,13 @@ export const preIncrementRule: GasRule = {
                     id: this.id,
                     description: "Use ++i instead of i++ to save gas",
                     severity: this.severity,
+                    filePath: filePath, 
                     location: {
                         line: getNodeLineNumber(node as ASTNodeWithLocation),
                         file: filePath,
                     },
                     code: getNodeText(node as ASTNodeWithLocation, sourceCode),
-                    suggestion: "Replace i++ with ++i",
+                    suggestions: ["Replace i++ with ++i"],
                     gasSaved: this.estimatedGasSaved,
                 },
             ];

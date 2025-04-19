@@ -13,7 +13,7 @@ export const packStorageVariablesRule: GasRule = {
     detect(node: ASTNode, sourceCode: string, filePath: string): GasIssue[] {
         if (node.type === "ContractDefinition" && node.subNodes) {
             const stateVars = node.subNodes.filter(
-                (n: ASTNode) => n.type  === "StateVariableDeclaration"
+                (n: ASTNode) => n.type === "StateVariableDeclaration"
             );
 
             for (let i = 0; i < stateVars.length - 1; i++) {
@@ -43,13 +43,13 @@ export const packStorageVariablesRule: GasRule = {
                                 description:
                                     "Consider rearranging state variables to optimize packing",
                                 severity: this.severity,
+                                filePath: filePath, 
                                 location: {
                                     line: getNodeLineNumber(node as ASTNodeWithLocation),
                                     file: filePath,
                                 },
                                 code: getNodeText(node as ASTNodeWithLocation, sourceCode),
-                                suggestion:
-                                    "Group smaller variables together to pack them into single storage slots",
+                                suggestions: ["Group smaller variables together to pack them into single storage slots"],
                                 gasSaved: this.estimatedGasSaved,
                             },
                         ];

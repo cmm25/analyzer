@@ -6,28 +6,31 @@ import { GasAnalysisResult } from "../types/gasAnalysisResult";
  * @param issues Gas issues found during analysis
  * @returns Structured statistics about the gas issues
  */
-export function calculateGasStats(
-    issues: GasIssue[]
-): GasAnalysisResult["stats"] {
+export function calculateGasStats( issues: GasIssue[]): GasAnalysisResult["stats"] {
     const issuesBySeverity = {
         high: countBySeverity(issues, "high"),
         medium: countBySeverity(issues, "medium"),
         low: countBySeverity(issues, "low"),
         info: countBySeverity(issues, "info")
     };
+    
     const totalGasSavings = issues.reduce((total, issue) => {
-        return total + (issue.estimatedGasSavings || 0);
+        const gasSavings = issue.estimatedGasSavings || 0;
+        return total + gasSavings;
     }, 0);
+    
     const issuesWithEstimates = issues.filter(issue => 
         issue.estimatedGasSavings !== undefined && 
         issue.estimatedGasSavings > 0
     ).length;
+    
     let estimatedGasSavings = "Unknown";
     if (totalGasSavings > 0) {
         estimatedGasSavings = `${totalGasSavings.toLocaleString()} gas units`;
     } else if (issues.length > 0) {
         estimatedGasSavings = "Potential savings cannot be accurately estimated";
     }
+    
     const issuesByType = issues.reduce((acc, issue) => {
         const type = issue.type || "unknown";
         acc[type] = (acc[type] || 0) + 1;
@@ -49,9 +52,6 @@ export function calculateGasStats(
  * @param severity Severity level to count
  * @returns Number of issues with the specified severity
  */
-function countBySeverity(
-    issues: GasIssue[], 
-    severity: "high" | "medium" | "low" | "info"
-): number {
+function countBySeverity( issues: GasIssue[],  severity: "high" | "medium" | "low" | "info"): number {
     return issues.filter(issue => issue.severity === severity).length;
 }

@@ -2,6 +2,7 @@ import { ASTNode } from "../parser/solidity";
 import { analyzeSecurity, SecurityAnalysisResult } from "./securityAnalyzer";
 import { analyzeGas, GasAnalysisResult } from "./gasOptimizer";
 import { Issue } from "../types";
+import { AnalysisOptions } from "./ruleEngine";
 
 export interface CombinedAnalysisResult {
     file: string;
@@ -21,24 +22,18 @@ export interface CombinedAnalysisResult {
     };
 }
 
-export class CombinedAnalyzer { public analyze( ast: ASTNode, sourceCode: string,  filePath: string): CombinedAnalysisResult {
-        // Run individual analyzers
-        const securityResult = analyzeSecurity(ast, sourceCode, filePath);
-        const gasResult = analyzeGas(ast, sourceCode, filePath);
-        const allIssues = [...securityResult.issues, ...gasResult.issues];
+export class CombinedAnalyzer { 
+    public analyze(ast: ASTNode, sourceCode: string, filePath: string): CombinedAnalysisResult {
+        const options: AnalysisOptions = {};
+        const securityResult = analyzeSecurity(ast, filePath, options);
+        const gasResult = analyzeGas(ast, filePath, options);
+        const allIssues = [...securityResult.issues, ...gasResult.issues] as Issue[];
+        
         const bySeverity = {
-            high:
-                securityResult.stats.issuesBySeverity.high +
-                gasResult.stats.issuesBySeverity.high,
-            medium:
-                securityResult.stats.issuesBySeverity.medium +
-                gasResult.stats.issuesBySeverity.medium,
-            low:
-                securityResult.stats.issuesBySeverity.low +
-                gasResult.stats.issuesBySeverity.low,
-            info:
-                securityResult.stats.issuesBySeverity.info +
-                gasResult.stats.issuesBySeverity.info,
+            high: securityResult.stats.issuesBySeverity.high +  gasResult.stats.issuesBySeverity.high,
+            medium: securityResult.stats.issuesBySeverity.medium + gasResult.stats.issuesBySeverity.medium,
+            low: securityResult.stats.issuesBySeverity.low + gasResult.stats.issuesBySeverity.low,
+            info: securityResult.stats.issuesBySeverity.info + gasResult.stats.issuesBySeverity.info,
         };
 
         return {
@@ -49,18 +44,14 @@ export class CombinedAnalyzer { public analyze( ast: ASTNode, sourceCode: string
             stats: {
                 securityIssueCount: securityResult.stats.totalIssues,
                 gasIssueCount: gasResult.stats.totalIssues,
-                totalIssueCount:
-                    securityResult.stats.totalIssues + gasResult.stats.totalIssues,
+                totalIssueCount: securityResult.stats.totalIssues + gasResult.stats.totalIssues,
                 bySeverity,
             },
         };
     }
 }
-export function analyzeCombined(
-    ast: ASTNode,
-    sourceCode: string,
-    filePath: string
-): CombinedAnalysisResult {
+
+export function analyzeCombined( ast: ASTNode, sourceCode: string, filePath: string ): CombinedAnalysisResult {
     const analyzer = new CombinedAnalyzer();
     return analyzer.analyze(ast, sourceCode, filePath);
 }

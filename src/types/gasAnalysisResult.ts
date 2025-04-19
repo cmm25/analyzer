@@ -10,7 +10,9 @@ export interface GasAnalysisResult {
             low: number;
             info: number;
         };
+        issuesByType?: Record<string, number>; 
         totalIssues: number;
+        issuesWithEstimates?: number; 
         estimatedGasSavings?: string;
     };
 }
