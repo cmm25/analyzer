@@ -81,10 +81,7 @@ export function nodeContains(node: ASTNode, type: string): boolean {
     return found;
 }
 export function getNodeLineNumber(node: ASTNodeWithLocation): number | null {
-    if (node.loc && node.loc.start) {
-        return node.loc.start.line;
-    }
-    return null;
+    return node.loc?.start.line || null;
 }
 export function getNodeText(node: ASTNodeWithLocation, source: string): string {
     if (node.loc && node.range) {

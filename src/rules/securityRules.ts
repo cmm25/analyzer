@@ -1,6 +1,6 @@
 import { ASTNode } from "../parser/solidity";
 import { ASTNodeWithLocation, getNodeLineNumber, getNodeText } from "../utils/astUtils";
-import { findExternalCalls, findStateChanges} from "../utils/vulnerabilityUtils";
+import { findExternalCalls, findStateChanges } from "../utils/vulnerabilityUtils";
 import { Issue, SecurityRule, ReentrancyRule, Severity } from "../types/rules";
 
 /**
@@ -16,10 +16,7 @@ export const reentrancyRule: ReentrancyRule = {
 
     detect(node: ASTNode, sourceCode: string, filePath: string): Issue[] {
         // Only check function definitions
-        if (node.type !== "FunctionDefinition") {
-            return [];
-        }
-
+        if (node.type !== "FunctionDefinition") { return [] }
         const externalCalls = findExternalCalls(node);
         const stateChanges = findStateChanges(node);
 
@@ -65,22 +62,18 @@ export const reentrancyRule: ReentrancyRule = {
             if (externalCalls.includes(currentNode)) {
                 for (let j = i + 1; j < nodesByPosition.length; j++) {
                     if (stateChanges.includes(nodesByPosition[j])) {
+                        // Just use type assertions where needed:
                         return [
                             {
                                 id: this.id,
-                                description:
-                                    "State variables are modified after an external call, which could lead to a reentrancy attack",
+                                description: "State variables are modified after an external call...",
                                 severity: this.severity,
                                 location: {
-                                    line: getNodeLineNumber(functionNode as ASTNodeWithLocation),
+                                    line: getNodeLineNumber(functionNode as ASTNodeWithLocation) || 0, 
                                     file: filePath,
                                 },
-                                code: getNodeText(
-                                    functionNode as ASTNodeWithLocation,
-                                    sourceCode
-                                ),
-                                suggestion:
-                                    "Consider using a reentrancy guard or modifying state variables before making external calls",
+                                code: getNodeText(functionNode as ASTNodeWithLocation, sourceCode),
+                                suggestions: [`Check the return value with 'require(succeeded, "Message")' or store it in a variable and verify it`],
                             },
                         ];
                     }
@@ -130,7 +123,7 @@ export const uncheckedCallsRule: SecurityRule = {
                     file: filePath,
                 },
                 code: getNodeText(node as ASTNodeWithLocation, sourceCode),
-                suggestion: `Check the return value with 'require(succeeded, "Message")' or store it in a variable and verify it`,
+                suggestions: [`Check the return value with 'require(succeeded, "Message")' or store it in a variable and verify it`],
             },
         ];
     },
@@ -166,9 +159,8 @@ export const dangerousFunctionsRule: SecurityRule = {
                     file: filePath,
                 },
                 code: getNodeText(node as ASTNodeWithLocation, sourceCode),
-                suggestion:
-                    "Consider using a more controlled deactivation mechanism instead of selfdestruct",
-            });
+                suggestions: ["Consider using a more controlled deactivation mechanism instead of selfdestruct"],
+        });
         }
 
         // Check for delegatecall
@@ -188,8 +180,7 @@ export const dangerousFunctionsRule: SecurityRule = {
                     file: filePath,
                 },
                 code: getNodeText(node as ASTNodeWithLocation, sourceCode),
-                suggestion:
-                    "Ensure the target of delegatecall is trusted and can't be manipulated by attackers",
+                suggestions: ["Ensure the target of delegatecall is trusted and can't be manipulated by attackers"],
             });
         }
 
@@ -204,8 +195,7 @@ export const dangerousFunctionsRule: SecurityRule = {
                     file: filePath,
                 },
                 code: getNodeText(node as ASTNodeWithLocation, sourceCode),
-                suggestion:
-                    "Try to use high-level Solidity constructs instead of assembly when possible",
+                suggestions: ["Try to use high-level Solidity constructs instead of assembly when possible"],
             });
         }
 

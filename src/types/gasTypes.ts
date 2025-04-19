@@ -1,4 +1,4 @@
-import { Issue, SecurityRule } from "./rules";
+import { Issue, SecurityRule } from './rules';
 
 export interface GasIssue extends Issue {
     gasSaved?: string;

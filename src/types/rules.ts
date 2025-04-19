@@ -1,18 +1,24 @@
+// src/types/rules.ts
 import { ASTNode } from "../parser/solidity";
 import { ASTNodeWithLocation } from "../utils/astUtils";
 export type Severity = "high" | "medium" | "low" | "info";
 
-
+// Export the Issue interface
 export interface Issue {
-        id: string;
-        title: string;
-        description: string;
-        message: string;
-        line: number;
-        column: number;
-        severity: 'high' | 'medium' | 'low' | 'info';
-        canAutoFix?: boolean;
-        suggestions?: string[];
+    id: string;
+    title?: string;
+    description: string;
+    message?: string;
+    line?: number | null;
+    column?: number | null;
+    severity: 'high' | 'medium' | 'low' | 'info';
+    canAutoFix?: boolean;
+    suggestions?: string[];
+    location?: {
+        line: number | null;
+        file: string;
+    };
+    code?: string;
 }
 
 export interface SecurityRule {
