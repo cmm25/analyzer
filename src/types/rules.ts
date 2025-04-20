@@ -22,6 +22,7 @@ export interface Issue {
         file?: string;
     };
     code?: string;
+    codeSnippet?: string;
 }
 
 export interface SecurityRule {

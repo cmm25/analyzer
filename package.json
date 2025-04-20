@@ -1,12 +1,16 @@
 {
     "name": "solidity-analyzer",
     "version": "1.0.0",
-    "main": "index.js",
+    "main": "dist/index.js",
+    "bin": {
+        "solidity-analyzer": "./bin/solidity-analyzer"
+    },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "build": "tsc",
         "start": "node dist/index.js",
-        "dev": "ts-node src/index.ts"
+        "dev": "ts-node src/index.ts",
+        "analyze": "node dist/index.js analyze"
     },
     "keywords": [],
     "author": "",

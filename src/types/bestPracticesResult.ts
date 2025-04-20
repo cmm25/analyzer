@@ -1,8 +1,8 @@
-import { PracticeIssue } from './practiceIssue';
+import { Issue } from './rules';
 
 export interface BestPracticesResult {
     file: string;
-    issues: PracticeIssue[];
+    issues: Issue[];
     stats: {
         issuesBySeverity: {
             high: number;

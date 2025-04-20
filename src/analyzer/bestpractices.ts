@@ -47,8 +47,16 @@ const PRACTICE_RULES: PracticeRule[] = [
         description: 'Function naming does not follow Solidity style guidelines',
         severity: 'info',
         check: checkFunctionNaming
+    },
+    {
+        id: 'BP005',
+        title: 'State changes without event emission',
+        description: 'Functions that change state should emit events for better observability',
+        severity: 'medium',
+        check: checkEventEmission
     }
 ];
+
 
 /**
  * Analyzes a Solidity AST for best practice violations
@@ -62,10 +70,7 @@ export function analyzeBestPractices(
     filePath: string,
     options: AnalysisOptions = {}
 ): BestPracticesResult {
-    // Initialize with empty issues array
     const issues: Issue[] = [];
-
-    // Return in the format expected by the analyzer
     return { issues };
 }
 
@@ -83,8 +88,6 @@ export async function analyzeBestPracticesDetailed(
     options: AnalysisOptions = {}
 ): Promise<BestPracticesResult> {
     const issues: Issue[] = [];
-
-    // Filter rules based on options
     let rulesToApply = [...PRACTICE_RULES];
 
     if (options.includeRules && options.includeRules.length > 0) {
@@ -96,8 +99,6 @@ export async function analyzeBestPracticesDetailed(
         rulesToApply = rulesToApply.filter(rule =>
             !options.excludeRules?.includes(rule.id));
     }
-
-    // Filter by severity if specified
     if (options.minSeverity) {
         const severityLevels = {
             high: 3,
@@ -111,8 +112,6 @@ export async function analyzeBestPracticesDetailed(
             return ruleLevel >= minLevel;
         });
     }
-
-    // Apply each rule
     for (const rule of rulesToApply) {
         const ruleIssues = await rule.check(ast, source, filePath);
         ruleIssues.forEach(partialIssue => {
@@ -132,7 +131,6 @@ export async function analyzeBestPracticesDetailed(
 
 async function checkMissingVisibility(ast: ASTNode, source: string, filePath: string): Promise<Partial<Issue>[]> {
     const issues: Partial<Issue>[] = [];
-    // Find functions without explicit visibility
     const functionRegex = /function\s+(\w+)\s*\([^)]*\)(?!\s*(public|private|internal|external))/g;
     const matches = [...source.matchAll(functionRegex)];
 
@@ -154,12 +152,8 @@ async function checkMissingVisibility(ast: ASTNode, source: string, filePath: st
     }
     return issues;
 }
-
-// All other function implementations remain the same...
 async function checkMissingNatspec(ast: ASTNode, source: string, filePath: string): Promise<Partial<Issue>[]> {
     const issues: Partial<Issue>[] = [];
-
-    // Find functions without natspec comments
     const functionRegex = /(?<!\*\/\s*)function\s+(\w+)/g;
     const matches = [...source.matchAll(functionRegex)];
 
@@ -199,7 +193,6 @@ async function checkFunctionNaming(ast: ASTNode, source: string, filePath: strin
             continue;
         }
 
-        // Check if the function follows camelCase naming convention
         if (!/^[a-z][a-zA-Z0-9]*$/.test(funcName) || funcName.includes('_')) {
             const lineNumber = source.substring(0, matchPos).split('\n').length;
 

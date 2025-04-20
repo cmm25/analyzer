@@ -1,15 +1,20 @@
-import { ASTNode } from '../parser/solidity';
-import { findNodes } from '../utils/astUtils';
-import { calculateGasStats } from '../utils/gasStatsCalculator';
-import { GasIssue, GasAnalysisResult, GasRule } from '../types';
-import { gasRules } from '../rules/gas';
-import { AnalysisOptions } from './ruleEngine';
+import { ASTNode } from "../parser/solidity";
+import { findNodes } from "../utils/astUtils";
+import { calculateGasStats } from "../utils/gasStatsCalculator";
+import { GasIssue, GasAnalysisResult, GasRule } from "../types";
+import { gasRules } from "../rules/gas";
+import { AnalysisOptions } from "./ruleEngine";
 
 export class GasOptimizer {
-  public analyze(ast: ASTNode, sourceCode: string, filePath: string, options: AnalysisOptions = {}): GasAnalysisResult {
+  public analyze(
+    ast: ASTNode,
+    sourceCode: string,
+    filePath: string,
+    options: AnalysisOptions = {}
+  ): GasAnalysisResult {
     const issues: GasIssue[] = [];
-    const nodes = findNodes(ast, '.*');
-    
+    const nodes = findNodes(ast, ".*");
+
     for (const rule of gasRules) {
       for (const node of nodes) {
         const ruleIssues = rule.detect(node, sourceCode, filePath);
@@ -18,11 +23,11 @@ export class GasOptimizer {
         }
       }
     }
-    
-    return { 
-      file: filePath, 
-      issues, 
-      stats: calculateGasStats(issues) 
+
+    return {
+      file: filePath,
+      issues,
+      stats: calculateGasStats(issues),
     };
   }
 }
@@ -34,8 +39,8 @@ export class GasOptimizer {
  * @param options Analysis options
  */
 export function analyzeGas(
-  ast: ASTNode, 
-  filePath: string, 
+  ast: ASTNode,
+  filePath: string,
   options: AnalysisOptions = {}
 ): GasAnalysisResult {
   const optimizer = new GasOptimizer();
@@ -46,13 +51,12 @@ export function analyzeGas(
 
 // For backward compatibility
 export function analyzeGasOptimization(
-  ast: ASTNode, 
-  filePath: string, 
+  ast: ASTNode,
+  filePath: string,
   options: AnalysisOptions = {}
 ): GasAnalysisResult {
   return analyzeGas(ast, filePath, options);
 }
 
-// Export necessary types from their respective modules
-export { GasIssue, GasAnalysisResult, GasRule } from '../types';
-export { gasRules } from '../rules/gas';
+export { GasIssue, GasAnalysisResult, GasRule } from "../types";
+export { gasRules } from "../rules/gas";

@@ -5,7 +5,6 @@ import { Issue } from '../types/rules';
 
 export function generateConsoleReport( results: AnalysisResult,  filePath: string, source: string ): void {
     const { securityIssues, gasIssues, practiceIssues } = results;
-
     console.log('\n' + chalk.bold(`Analysis results for ${filePath}:`));
 
     // Print security issues
@@ -49,7 +48,13 @@ function printIssueTable(issues: Issue[], source: string): void {
             issue.severity === 'low' ? chalk.blue :
             chalk.gray;
 
-        data.push([issue.id,issue.title,issue.line.toString(),severityColor(issue.severity),issue.description]);
+            data.push([
+                issue.id,
+                issue.title || issue.id, 
+                issue.line ? issue.line.toString() : 'unknown', 
+                severityColor(issue.severity),
+                issue.description
+            ]);
     }
     console.log(table(data));
 
@@ -60,8 +65,8 @@ function printIssueTable(issues: Issue[], source: string): void {
         if (issue.codeSnippet) {
             console.log(chalk.dim('\nCode:'));
             const lines = issue.codeSnippet.split('\n');
-            const lineNumber = issue.line;
-            const startLine = Math.max(0, lineNumber - lines.length / 2);
+            const lineNumber = issue.line || 0; 
+            const startLine = Math.max(0, lineNumber - Math.floor(lines.length / 2));
 
             lines.forEach((line, index) => {
                 const currentLineNumber = startLine + index;

@@ -151,19 +151,19 @@ export async function generateHtmlReport( results: AnalysisResult,  filePath: st
                 <div class="issues">
                     <h2>Security Issues</h2>
                     ${renderIssueTable(securityIssues, "security")}
-                    ${securityIssues.map((issue) => renderIssue(issue, "security")).join("")}
+                    ${securityIssues.map((issue: Issue) => renderIssue(issue, "security")).join("")}
                 </div>
                 <div class="issues">
                     <h2>Gas Optimizations</h2>
                     ${renderIssueTable(gasIssues, "gas")}
-                    ${gasIssues.map((issue) => renderIssue(issue, "gas")).join("")}
+                    ${gasIssues.map((issue: Issue) => renderIssue(issue, "gas")).join("")}
                 </div>
                 
                 <!-- Best Practices -->
                 <div class="issues">
                     <h2>Best Practices</h2>
                     ${renderIssueTable(practiceIssues, "practices")}
-                    ${practiceIssues.map((issue) => renderIssue(issue, "practices")).join("")}
+                    ${practiceIssues.map((issue: Issue) => renderIssue(issue, "practices")).join("")}
                 </div>
             </div>
             
@@ -234,7 +234,7 @@ function renderIssue(issue: Issue, type: string): string {
             </h3>
             <p>${issue.description}</p>      
             <p><strong>Location:</strong> Line ${issue.line}</p>   
-            ${issue.codeSnippet ? `<div class="code">${renderCodeWithHighlight(issue.codeSnippet, issue.line)}</div>`: ''}        
+            ${issue.codeSnippet ? `<div class="code">${renderCodeWithHighlight(issue.codeSnippet, issue.line || 0)}</div>`: ''}      
             ${issue.suggestions && issue.suggestions.length > 0 ? `
                 <div class="suggestion">
                     <strong>Suggestions:</strong>
@@ -265,9 +265,8 @@ function highlightIssuesInSource(source: string, issues: Issue[]): string {
     const lineToIssues = new Map<number, Issue[]>();
 
     issues.forEach(issue => {
-        const lineIssues = lineToIssues.get(issue.line) || [];
-        lineIssues.push(issue);
-        lineToIssues.set(issue.line, lineIssues);
+        const lineIssues = lineToIssues.get(issue.line || 0) || [];
+        lineToIssues.set(issue.line || 0, lineIssues);
     });
 
     return lines.map((line, index) => {
