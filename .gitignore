@@ -1,10 +1,6 @@
 node_modules
 .qodo
-dist
-node
-npm 
-npx
 solidity-analy*
 test-*
-debug.ts
 reports
+dist
