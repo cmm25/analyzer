@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { table } from 'table';
-import { AnalysisResult, Issue } from '../analyzer';
+import { AnalysisResult } from '../analyzer';
+import { Issue } from '../types/rules';
 
 export function generateConsoleReport( results: AnalysisResult,  filePath: string, source: string ): void {
     const { securityIssues, gasIssues, practiceIssues } = results;

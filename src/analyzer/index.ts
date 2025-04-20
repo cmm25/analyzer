@@ -3,7 +3,7 @@ import { analyzeSecurity, SecurityAnalysisResult } from "./securityAnalyzer";
 import { analyzeGas, GasAnalysisResult } from "./gasOptimizer";
 import { analyzeBestPractices, BestPracticesResult } from "./bestpractices";
 import { AnalysisOptions } from "./ruleEngine";
-import { Issue } from "../types/issue";
+import { Issue } from "../types/rules";
 
 export interface AnalysisResult {
   file: string;
@@ -49,14 +49,17 @@ export async function analyzeSolidity( ast: ASTNode, options: AnalysisOptions, f
     }
   };
   
-  let practicesResult: BestPracticesResult = { 
-    file: filePath,
-    issues: [] 
-  };
+  let practicesResult: BestPracticesResult = {
+    file: filePath,  
+    issues: [],
+    stats: {
+        issuesBySeverity: { high: 0, medium: 0, low: 0, info: 0 },
+        totalIssues: 0
+    }
+};
   
   
-  const sourceCode = ""; // This should ideally be loaded or passed in
-
+  const sourceCode = ""; 
   if (options.security !== false) {
     securityResult = analyzeSecurity(ast, filePath, options);
   }
@@ -105,10 +108,7 @@ export async function analyzeSolidity( ast: ASTNode, options: AnalysisOptions, f
   };
 }
 
-function countBySeverity(
-  issues: Issue[],
-  severity: "high" | "medium" | "low" | "info"
-): number {
+function countBySeverity(issues: Issue[],severity: "high" | "medium" | "low" | "info"): number {
   return issues.filter((issue) => issue.severity === severity).length;
 }
 

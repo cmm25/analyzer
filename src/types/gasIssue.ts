@@ -14,8 +14,8 @@ export interface GasIssue extends Omit<Issue, 'location'> {
     } | {
         start: { line: number; column: number; };
         end: { line: number; column: number; };
-        line?: number | null;  
-        file?: string;        
+        line?: number | null;
+        file?: string;
     };
     explanation?: string;
 }

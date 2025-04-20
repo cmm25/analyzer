@@ -1,9 +1,7 @@
-// src/types/rules.ts
 import { ASTNode } from "../parser/solidity";
 import { ASTNodeWithLocation } from "../utils/astUtils";
 export type Severity = "high" | "medium" | "low" | "info";
 
-// Export the Issue interface
 export interface Issue {
     id: string;
     title?: string;
@@ -17,6 +15,11 @@ export interface Issue {
     location?: {
         line: number | null;
         file: string;
+    } | {
+        start: { line: number; column: number; };
+        end: { line: number; column: number; };
+        line?: number | null;
+        file?: string;
     };
     code?: string;
 }
