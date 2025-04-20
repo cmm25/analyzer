@@ -1,21 +1,9 @@
-import { Issue } from './rules';
+import { Issue } from './common';
 
-export interface GasIssue extends Omit<Issue, 'location'> {
-    filePath: string;
+export interface GasIssue extends Issue {
     gasSaved?: string;
     estimatedGasSavings?: number;
     type?: string;
-    codeSnippet?: string;
-    canAutoFix?: boolean; 
-    fix?: () => string;  
-    location?: {
-        line: number | null;
-        file: string;
-    } | {
-        start: { line: number; column: number; };
-        end: { line: number; column: number; };
-        line?: number | null;
-        file?: string;
-    };
+    fix?: () => string;
     explanation?: string;
 }

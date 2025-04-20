@@ -1,12 +1,13 @@
 import { ASTNode } from "../parser/solidity";
 import { findNodes } from "../utils/astUtils";
-import { SecurityRule, Issue } from "../types/rules";
+import { SecurityRule} from "../types/rules";
 import { securityRules } from "../rules/securityRules";
+import { Issue } from "../types";
 
 export interface AnalysisOptions {
     includeRules?: string[];
     excludeRules?: string[];
-    minSeverity?: "high" | "medium" | "low" | "info";
+    minSeverity?: "critical" | "high" | "medium" | "low" | "info";
     security?: boolean;
     gas?: boolean;
     practices?: boolean;
@@ -70,12 +71,13 @@ export class RuleEngine {
 
         return result;
     }
-    private filterIssuesBySeverity( issues: Issue[], minSeverity?: "high" | "medium" | "low" | "info" ): Issue[] {
+    private filterIssuesBySeverity( issues: Issue[], minSeverity?: "critical" | "high" | "medium" | "low" | "info" ): Issue[] {
         if (!minSeverity) {
             return issues;
         }
 
         const severityLevels = {
+            critical: 4,
             high: 3,
             medium: 2,
             low: 1,

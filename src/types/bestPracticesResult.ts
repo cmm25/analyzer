@@ -1,15 +1,7 @@
-import { Issue } from './rules';
+import { Issue, AnalysisStats } from './common';
 
 export interface BestPracticesResult {
     file: string;
-    issues: Issue[];
-    stats: {
-        issuesBySeverity: {
-            high: number;
-            medium: number;
-            low: number;
-            info: number;
-        };
-        totalIssues: number;
-    };
+    issues: Issue[]; 
+    stats: AnalysisStats;
 }

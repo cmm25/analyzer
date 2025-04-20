@@ -8,7 +8,7 @@ export interface BestPracticesResult {
 export interface AnalysisOptions {
     excludeRules?: string[];
     includeRules?: string[];
-    minSeverity?: 'high' | 'medium' | 'low' | 'info';
+    minSeverity?: 'critical' | 'high' | 'medium' | 'low' | 'info';
 }
 
 export interface PracticeRule {
@@ -101,6 +101,7 @@ export async function analyzeBestPracticesDetailed(
     }
     if (options.minSeverity) {
         const severityLevels = {
+            critical: 4,
             high: 3,
             medium: 2,
             low: 1,
@@ -350,6 +351,7 @@ export class RuleEngine {
         }
         if (options.minSeverity) {
             const severityLevels: Record<string, number> = {
+                critical: 4,
                 high: 3,
                 medium: 2,
                 low: 1,

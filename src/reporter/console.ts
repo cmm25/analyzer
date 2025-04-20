@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { table } from 'table';
 import { AnalysisResult } from '../analyzer';
-import { Issue } from '../types/rules';
+import { Issue, Severity } from '../types/common';
 
 export function generateConsoleReport( results: AnalysisResult,  filePath: string, source: string ): void {
     const { securityIssues, gasIssues, practiceIssues } = results;
@@ -28,8 +28,14 @@ export function generateConsoleReport( results: AnalysisResult,  filePath: strin
 
 function printIssueTable(issues: Issue[], source: string): void {
     const sortedIssues = [...issues].sort((a, b) => {
-        const severityOrder = { high: 0, medium: 1, low: 2, info: 3 };
-        return severityOrder[a.severity] - severityOrder[b.severity];
+        const severityOrder: Record<Severity, number> = { 
+            critical: 0,
+            high: 1, 
+            medium: 2, 
+            low: 3, 
+            info: 4 
+        };
+        return severityOrder[a.severity as Severity] - severityOrder[b.severity as Severity];
     });
 
     const data = [
@@ -43,6 +49,7 @@ function printIssueTable(issues: Issue[], source: string): void {
     ];
     for (const issue of sortedIssues) {
         const severityColor =
+            issue.severity === 'critical' ? chalk.bold.red :
             issue.severity === 'high' ? chalk.red :
             issue.severity === 'medium' ? chalk.yellow :
             issue.severity === 'low' ? chalk.blue :

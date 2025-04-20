@@ -1,13 +1,19 @@
-export { Issue, SecurityRule, ReentrancyRule } from './rules';
+export { Severity, Issue, BaseIssue, AnalysisOptions, AnalysisStats } from './common';
 
-// Gas analyzer related types
-export { GasIssue } from './gasIssue';
-export { GasRule } from './gasRule';
-export { GasAnalysisResult } from './gasAnalysisResult';
+// Rules
+export { Rule, SecurityRule, ReentrancyRule } from './rules';
 
-// Security related types
-export { SecurityIssue } from './securityIssue';
-export { SecurityAnalysisResult } from './securityAnalysisResult';
-export { PracticeIssue } from './practiceIssue';
-export { PracticeRule } from './practiceRule';
-export { BestPracticesResult } from './bestPracticesResult';
+// Issue types
+export type { GasIssue } from './gasIssue';
+export type { SecurityIssue } from './securityIssue';
+export type { PracticeIssue } from './practiceIssue';
+
+// Rule types
+export type { GasRule } from './gasRule';
+export type { PracticeRule } from './practiceRule';
+
+// Result types
+export type { GasAnalysisResult } from './gasAnalysisResult';
+export type { SecurityAnalysisResult } from './securityAnalysisResult';
+export type { BestPracticesResult } from './bestPracticesResult';
+

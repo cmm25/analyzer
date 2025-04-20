@@ -1,7 +1,12 @@
-import { Issue, SecurityRule } from './rules';
+import { SecurityRule } from './rules';
+import { Issue } from './common';
 
 export interface GasIssue extends Issue {
     gasSaved?: string;
+    estimatedGasSavings?: number;
+    type?: string;
+    fix?: () => string;
+    explanation?: string;
 }
 
 export interface GasAnalysisResult {

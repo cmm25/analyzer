@@ -1,18 +1,12 @@
 import { GasIssue } from "./gasIssue";
+import { AnalysisStats } from "./common";
 
 export interface GasAnalysisResult {
     file: string;
     issues: GasIssue[];
-    stats: {
-        issuesBySeverity: {
-            high: number;
-            medium: number;
-            low: number;
-            info: number;
-        };
-        issuesByType?: Record<string, number>; 
-        totalIssues: number;
-        issuesWithEstimates?: number; 
+    stats: AnalysisStats & {
+        issuesByType?: Record<string, number>;
+        issuesWithEstimates?: number;
         estimatedGasSavings?: string;
     };
 }

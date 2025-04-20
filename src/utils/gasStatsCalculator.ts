@@ -8,6 +8,7 @@ import { GasAnalysisResult } from "../types/gasAnalysisResult";
  */
 export function calculateGasStats( issues: GasIssue[]): GasAnalysisResult["stats"] {
     const issuesBySeverity = {
+        critical: countBySeverity(issues, "critical"),
         high: countBySeverity(issues, "high"),
         medium: countBySeverity(issues, "medium"),
         low: countBySeverity(issues, "low"),
@@ -52,6 +53,6 @@ export function calculateGasStats( issues: GasIssue[]): GasAnalysisResult["stats
  * @param severity Severity level to count
  * @returns Number of issues with the specified severity
  */
-function countBySeverity( issues: GasIssue[],  severity: "high" | "medium" | "low" | "info"): number {
+function countBySeverity( issues: GasIssue[],  severity: "critical" | "high" | "medium" | "low" | "info"): number {
     return issues.filter(issue => issue.severity === severity).length;
 }

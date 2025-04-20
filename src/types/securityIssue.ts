@@ -1,3 +1,4 @@
-import { Issue } from './rules';
+import { Issue } from './common';
+
 
 export interface SecurityIssue extends Issue {}

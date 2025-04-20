@@ -1,58 +1,41 @@
 import { ASTNode } from "../parser/solidity";
 import { ASTNodeWithLocation } from "../utils/astUtils";
-import { SecurityAnalyzer, SecurityAnalysisResult } from "./securityAnalyzer";
-import { GasOptimizer, GasAnalysisResult } from "./gasOptimizer";
-import { analyzeBestPracticesDetailed, BestPracticesResult } from "./bestpractices";
+import { SecurityAnalyzer } from "./securityAnalyzer";
+import { GasOptimizer } from "./gasOptimizer";
+import { analyzeBestPracticesDetailed } from "./bestpractices";
 
-export type Severity = "high" | "medium" | "low" | "info";
+// Import types correctly
+import { 
+    Issue, 
+    Severity,
+    AnalysisOptions 
+} from "../types";
 
-export interface Issue {
-    id: string;
-    title?: string;
-    description: string;
-    message?: string;
-    line?: number | null;
-    column?: number | null;
-    severity: 'high' | 'medium' | 'low' | 'info';
-    canAutoFix?: boolean;
-    suggestions?: string[];
-    location?: {
-        line: number | null;
-        file: string;
-    } | {
-        start: { line: number; column: number; };
-        end: { line: number; column: number; };
-        line?: number | null;
-        file?: string;
-    };
-    code?: string;
-    codeSnippet?: string;
-    filePath?: string;
-}
+// Import result types as type imports to avoid "Cannot find name" errors
+import type { 
+    GasAnalysisResult, 
+    SecurityAnalysisResult, 
+    BestPracticesResult 
+} from "../types";
 
-
-export interface AnalysisOptions {
-    security?: boolean;
-    gas?: boolean;
-    practices?: boolean;
-    includeRules?: string[];
-    excludeRules?: string[];
-    minSeverity?: "high" | "medium" | "low" | "info";
-    /** Enable verbose output */
-    verbose?: boolean;
-}
+// Import all rules for proper registration
+import "../rules/securityRules";
+import "../rules/gas";
+// Import best practices rules directly from the analyzer
+import { bestPracticesRules } from "./bestpractices";
 
 export interface AnalysisResult {
     file: string;
-    security?: any;
-    gas?: any;
-    practice?: any;
+    security?: SecurityAnalysisResult;
+    gas?: GasAnalysisResult;
+    practice?: BestPracticesResult;
     securityIssues: Issue[];
     gasIssues: Issue[];
     practiceIssues: Issue[];
     issues?: Issue[];
     stats: { 
         issuesBySeverity: {
+            critical: number;
             high: number;
             medium: number;
             low: number;
@@ -104,6 +87,11 @@ export async function analyze(
     filePath: string,
     sourceCode: string
 ): Promise<AnalysisResult> {
+    if (options.verbose) {
+        console.log(`Starting analysis for ${filePath}`);
+        console.log(`Analysis options: ${JSON.stringify(options)}`);
+    }
+
     // Default: run all analyses if none specified
     const runAll = !options.security && !options.gas && !options.practices;
     const runSecurity = options.security || runAll;
@@ -116,8 +104,8 @@ export async function analyze(
         securityIssues: [],
         gasIssues: [],
         practiceIssues: [],
-        stats: {  // Initialize stats object directly
-            issuesBySeverity: { high: 0, medium: 0, low: 0, info: 0 },
+        stats: {
+            issuesBySeverity: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
             totalIssues: 0
         }
     };
@@ -127,8 +115,9 @@ export async function analyze(
         if (options.verbose) {
             console.log(`Running security analysis on ${filePath}...`);
         }
-        const securityAnalyzer = new SecurityAnalyzer();
-        const securityResults = securityAnalyzer.analyze(ast, sourceCode, filePath, options);
+        // Pass options through the constructor, not the analyze method
+        const securityAnalyzer = new SecurityAnalyzer(ast, sourceCode, filePath, options);
+        const securityResults = securityAnalyzer.analyze();
         result.security = securityResults;
         result.securityIssues = securityResults.issues;
         if (options.verbose) {
@@ -142,45 +131,52 @@ export async function analyze(
             console.log(`Running gas optimization analysis on ${filePath}...`);
         }
         const gasOptimizer = new GasOptimizer();
-        const gasResults = gasOptimizer.analyze(ast, sourceCode, filePath, options);
+        const gasResults = gasOptimizer.analyze(ast, sourceCode, filePath, options as any);
         result.gas = gasResults;
-        result.gasIssues = gasResults.issues;
+        // Cast issues to ensure type compatibility
+        result.gasIssues = gasResults.issues as Issue[];
         if (options.verbose) {
             console.log(`Found ${gasResults.issues.length} gas optimization opportunities.`);
         }
     }
 
-    // Best practices analysis
     if (runPractices) {
         if (options.verbose) {
             console.log(`Running best practices analysis on ${filePath}...`);
         }
-        const practiceResults = await analyzeBestPracticesDetailed(ast, sourceCode, filePath, options);
-        result.practice = practiceResults;
+        const practiceResults = await analyzeBestPracticesDetailed(ast, sourceCode, filePath, options as any);
+        result.practice = practiceResults as any;
         result.practiceIssues = practiceResults.issues;
         if (options.verbose) {
             console.log(`Found ${practiceResults.issues.length} best practice issues.`);
         }
     }
-
-    // Combine all issues
     result.issues = [...result.securityIssues, ...result.gasIssues, ...result.practiceIssues];
-    
-    // Update stats
+
     result.stats = calculateStats(result.issues);
 
     if (options.verbose) {
         console.log(`Analysis complete. Total issues: ${result.stats.totalIssues}`);
+        console.log(`Issues by severity: Critical: ${result.stats.issuesBySeverity.critical}, High: ${result.stats.issuesBySeverity.high}, Medium: ${result.stats.issuesBySeverity.medium}, Low: ${result.stats.issuesBySeverity.low}, Info: ${result.stats.issuesBySeverity.info}`);
     }
 
     return result;
 }
 
 function calculateStats(issues: Issue[]): AnalysisResult["stats"] {
-    const issuesBySeverity = { high: 0, medium: 0, low: 0, info: 0 };
+    const issuesBySeverity = { 
+        critical: 0, 
+        high: 0, 
+        medium: 0, 
+        low: 0, 
+        info: 0 
+    };
     
     for (const issue of issues) {
-        issuesBySeverity[issue.severity]++;
+        const severityKey = issue.severity as keyof typeof issuesBySeverity;
+        if (severityKey in issuesBySeverity) {
+            issuesBySeverity[severityKey]++;
+        }
     }
     
     return {
@@ -188,3 +184,4 @@ function calculateStats(issues: Issue[]): AnalysisResult["stats"] {
         totalIssues: issues.length
     };
 }
+export { AnalysisOptions } from "../types";

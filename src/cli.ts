@@ -1,16 +1,15 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import glob from "glob";
-import { promisify } from "util";
+import { glob } from "glob"; 
 import path from "path";
 import fs from "fs";
-import { analyze, AnalysisOptions, AnalysisResult } from "./analyzer";
+import { analyze, AnalysisResult } from "./analyzer";
+import { AnalysisOptions } from "./types";
 import { generateConsoleReport, generateHtmlReport } from "./reporter";
 import { readSolidityFile, writeToFile } from "./utils/fileSystem";
 import { parseSolidity, ParserError } from "./parser/solidity"; 
 
-const globPromise = promisify(glob.Glob);
 
 const program = new Command();
 program
@@ -41,7 +40,7 @@ program
             console.log(chalk.blue("========================================="));
             console.log(`Working directory: ${process.cwd()}`);
 
-            const files = await globPromise(filesPatterns);
+            const files = await glob(filesPatterns);
             if (files.length === 0) {
                 console.log(
                     chalk.yellow(`No files matching the pattern: ${filesPatterns}`)

@@ -1,5 +1,5 @@
 import { AnalysisResult } from '../analyzer';
-import { Issue } from '../types/rules';
+import { Issue, Severity } from '../types/common';
 import { writeToFile } from '../utils/fileSystem';
 export async function generateHtmlReport( results: AnalysisResult,  filePath: string, source: string, outputPath: string): Promise<void> {
     const { securityIssues, gasIssues, practiceIssues } = results;

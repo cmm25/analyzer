@@ -1,37 +1,20 @@
 import { ASTNode } from "../parser/solidity";
 import { ASTNodeWithLocation } from "../utils/astUtils";
-export type Severity = "high" | "medium" | "low" | "info";
+import { Severity, Issue } from "./common";
+export { Issue };
 
-export interface Issue {
-    id: string;
-    title?: string;
-    description: string;
-    message?: string;
-    line?: number | null;
-    column?: number | null;
-    severity: 'high' | 'medium' | 'low' | 'info';
-    canAutoFix?: boolean;
-    suggestions?: string[];
-    location?: {
-        line: number | null;
-        file: string;
-    } | {
-        start: { line: number; column: number; };
-        end: { line: number; column: number; };
-        line?: number | null;
-        file?: string;
-    };
-    code?: string;
-    codeSnippet?: string;
-}
-
-export interface SecurityRule {
+export interface Rule {
     id: string;
     name: string;
     description: string;
     severity: Severity;
     category: string;
+}
 
+/**
+ * Security rule interface
+ */
+export interface SecurityRule extends Rule {
     /**
      * Check if the given AST node violates this rule
      * @param node The AST node to check
@@ -41,10 +24,6 @@ export interface SecurityRule {
      */
     detect(node: ASTNode, sourceCode: string, filePath: string): Issue[];
 }
-
-/**
- * Security rule specifically for reentrancy detection
- */
 export interface ReentrancyRule extends SecurityRule {
     checkReentrancyPattern(
         externalCalls: ASTNodeWithLocation[],

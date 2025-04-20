@@ -1,34 +1,50 @@
 {
     "name": "solidity-analyzer",
     "version": "1.0.0",
+    "description": "A tool for analyzing Solidity smart contracts for patterns and potential issues",
     "main": "dist/index.js",
     "bin": {
-        "solidity-analyzer": "./bin/solidity-analyzer"
+        "solidity-analyzer": "dist/cli.js"
     },
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
         "build": "tsc",
-        "start": "node dist/index.js",
-        "dev": "ts-node src/index.ts",
-        "analyze": "node dist/index.js analyze"
+        "start": "node dist/cli.js",
+        "dev": "ts-node src/cli.ts",
+        "prepublishOnly": "npm run build",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "analyze": "node dist/cli.js analyze"
     },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "description": "",
+    "keywords": [
+        "solidity",
+        "ethereum",
+        "smart-contracts",
+        "analysis",
+        "security",
+        "cli"
+    ],
+    "author": "Mutegi Mutugi",
+    "license": "MIT",
     "dependencies": {
-        "@solidity-parser/parser": "^0.20.0",
+        "@solidity-parser/parser": "^0.20.1",
         "boxen": "^8.0.1",
-        "chalk": "^5.4.1",
+        "chalk": "^4.1.2",
         "commander": "^13.1.0",
+        "dotenv": "^16.4.7",
+        "figlet": "^1.7.0",
         "glob": "^11.0.1",
-        "ora": "^8.2.0",
+        "inquirer": "^9.2.12",
+        "ora": "^5.4.1",
         "table": "^6.9.0"
     },
     "devDependencies": {
+        "@types/figlet": "^1.5.8",
         "@types/glob": "^8.1.0",
+        "@types/inquirer": "^9.0.7",
         "@types/node": "^22.14.1",
         "ts-node": "^10.9.2",
         "typescript": "^5.8.3"
+    },
+    "engines": {
+        "node": ">=16"
     }
 }

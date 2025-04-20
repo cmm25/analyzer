@@ -1,59 +1,103 @@
 import { ASTNode } from "../parser/solidity";
-import { RuleEngine, AnalysisOptions } from "./ruleEngine";
-import { Issue } from "../types";
+import { Issue, AnalysisOptions, AnalysisStats } from "../types/common";
+import { securityRules } from "../rules/securityRules";
 
+// Define SecurityAnalysisResult interface explicitly in this file and export it
 export interface SecurityAnalysisResult {
   file: string;
   issues: Issue[];
-  stats: {
-    issuesBySeverity: {
-      high: number;
-      medium: number;
-      low: number;
-      info: number;
-    };
-    totalIssues: number;
-  };
+  stats: AnalysisStats;
 }
 
 export class SecurityAnalyzer {
-  private engine: RuleEngine;
-  constructor() {
-    this.engine = new RuleEngine();
-  }
+  private ast: ASTNode;
+  private sourceCode: string;
+  private filePath: string;
+  private options?: AnalysisOptions;
 
-  public analyze(
+  constructor(
     ast: ASTNode,
     sourceCode: string,
     filePath: string,
-    options: AnalysisOptions = {}
-  ): SecurityAnalysisResult {
-    const issues = this.engine.analyze(ast, sourceCode, filePath, options);
-    return { file: filePath, issues, stats: this.calculateStats(issues) };
+    options?: AnalysisOptions
+  ) {
+    this.ast = ast;
+    this.sourceCode = sourceCode;
+    this.filePath = filePath;
+    this.options = options;
   }
 
-  private calculateStats(issues: Issue[]): SecurityAnalysisResult["stats"] {
-    const issuesBySeverity = { high: 0, medium: 0, low: 0, info: 0 };
+  public analyze(): SecurityAnalysisResult {
+    console.log("Running security analysis...");
+
+    let issues: Issue[] = [];
+
+    // Apply all security rules
+    for (const rule of securityRules) {
+      try {
+        if (this.options?.verbose) {
+          console.log(`Applying security rule: ${rule.id} - ${rule.name}`);
+        }
+        const ruleIssues = rule.detect(
+          this.ast,
+          this.sourceCode,
+          this.filePath
+        );
+        if (ruleIssues.length > 0 && this.options?.verbose) {
+          console.log(`Rule ${rule.id} found ${ruleIssues.length} issues`);
+        }
+        issues = [...issues, ...ruleIssues];
+      } catch (error) {
+        console.error(`Error applying security rule ${rule.id}: ${error}`);
+        if (this.options?.verbose) {
+          console.error((error as Error).stack);
+        }
+      }
+    }
+
+    if (this.options?.verbose) {
+      console.log(`Security analysis complete. Found ${issues.length} issues.`);
+    }
+
+    return {
+      file: this.filePath,
+      issues,
+      stats: this.calculateStats(issues),
+    };
+  }
+
+  private calculateStats(issues: Issue[]): AnalysisStats {
+    const issuesBySeverity = {
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+      info: 0,
+    };
+
     issues.forEach((issue) => {
-      issuesBySeverity[issue.severity]++;
+      const severityKey = issue.severity as keyof typeof issuesBySeverity;
+      if (severityKey in issuesBySeverity) {
+        issuesBySeverity[severityKey]++;
+      }
     });
-    return { issuesBySeverity, totalIssues: issues.length };
+
+    return {
+      issuesBySeverity,
+      totalIssues: issues.length,
+    };
   }
 }
 
 /**
  * Analyzes a Solidity AST for security vulnerabilities
- * @param ast The AST to analyze
- * @param filePath Path to the source file
- * @param options Analysis options
  */
 export function analyzeSecurity(
   ast: ASTNode,
+  sourceCode: string,
   filePath: string,
-  options: AnalysisOptions = {}
+  options?: AnalysisOptions
 ): SecurityAnalysisResult {
-  const analyzer = new SecurityAnalyzer();
-  // Get source code from AST or load from file if needed
-  const sourceCode = "";
-  return analyzer.analyze(ast, sourceCode, filePath, options);
+  const analyzer = new SecurityAnalyzer(ast, sourceCode, filePath, options);
+  return analyzer.analyze();
 }
