@@ -2,7 +2,6 @@ import { ASTNode } from "../parser/solidity";
 import { Issue, AnalysisOptions, AnalysisStats } from "../types/common";
 import { securityRules } from "../rules/securityRules";
 
-// Define SecurityAnalysisResult interface explicitly in this file and export it
 export interface SecurityAnalysisResult {
   file: string;
   issues: Issue[];
